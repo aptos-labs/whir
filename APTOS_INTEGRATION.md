@@ -87,11 +87,6 @@ This script benchmarks:
 - **Proof sizes** are nearly identical across all hash functions (~75-87 KiB)
 - **Verifier hash count** scales linearly with instance size (1.0k → 1.3k for 2^18 → 2^21)
 
-**ZK Recursion Efficiency:**
-- For 2^18: 1,000 Poseidon(2) hashes → ~12s Groth16 proving time (snarkjs, M2 Max, 1 thread)
-- This is **3× faster** than proving the baseline Aptos keyless circuit (36.7s)
-- Demonstrates Poseidon's advantage for recursive proof systems
-
 ## Implementation Details
 
 ### Modified Files
