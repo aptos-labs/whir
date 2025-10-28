@@ -69,11 +69,16 @@ cargo bench --bench hash_comparison
 ```
 
 ### WHIR Prover Benchmarks
-Benchmark WHIR across different instance sizes and hash functions:
+Benchmark WHIR PCS across different instance sizes and hash functions:
 ```bash
-cargo run --release --bin benchmark -- -t PCS -d 18 -r 3 -f Field256 --hash Blake3 --sec ConjectureList
-cargo run --release --bin benchmark -- -t PCS -d 18 -r 3 -f Field256 --hash Keccak --sec ConjectureList
-cargo run --release --bin benchmark -- -t PCS -d 18 -r 3 -f Field256 --hash Poseidon --sec ConjectureList
+# Blake3 (fastest)
+cargo run --release --bin benchmark -- -d 18 -r 3 -f Field256 --hash Blake3 --sec ConjectureList
+
+# Keccak256 (medium speed)
+cargo run --release --bin benchmark -- -d 18 -r 3 -f Field256 --hash Keccak --sec ConjectureList
+
+# Poseidon (ZK-friendly, slowest)
+cargo run --release --bin benchmark -- -d 18 -r 3 -f Field256 --hash Poseidon --sec ConjectureList
 ```
 
-See `../Linear_Update.md` for comprehensive benchmark results comparing all three hash functions across instances 2^18 to 2^22.
+**Note**: The `benchmark` binary is PCS-only and runs the prover/verifier multiple times for accurate timing.

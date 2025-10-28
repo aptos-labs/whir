@@ -251,8 +251,8 @@ where
         // eprintln!("\n========== SUMCHECK VERIFICATION ({} rounds) ==========", rounds);
         // eprintln!("Initial claimed_sum: {:?}", claimed_sum);
         
-        for round_idx in 0..rounds {
-            // eprintln!("\n--- Sumcheck Round {} ---", round_idx);
+        for _round_idx in 0..rounds {
+            // eprintln!("\n--- Sumcheck Round {} ---", _round_idx);
             
             // Receive this round's sumcheck polynomial
             let sumcheck_poly_evals: [_; 3] = verifier_state.next_scalars()?;
