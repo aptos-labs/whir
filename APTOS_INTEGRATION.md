@@ -102,7 +102,6 @@ aptos-crypto = { git = "https://github.com/aptos-labs/aptos-core", branch = "mai
 
 ## Related Work
 
-- **WHIR Verifier Recursion**: See [research/cryptography/whir_verifier_recursion/](https://github.com/aptos-labs/research/tree/main/cryptography/whir_verifier_recursion/) for Circom circuits simulating WHIR verifier in Groth16
 - **Original WHIR**: [WizardOfMenlo/whir](https://github.com/WizardOfMenlo/whir)
 - **WHIR Paper**: [eprint.iacr.org/2024/1586](https://eprint.iacr.org/2024/1586)
 
