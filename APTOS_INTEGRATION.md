@@ -105,9 +105,3 @@ aptos-crypto = { git = "https://github.com/aptos-labs/aptos-core", branch = "mai
 - **Original WHIR**: [WizardOfMenlo/whir](https://github.com/WizardOfMenlo/whir)
 - **WHIR Paper**: [eprint.iacr.org/2024/1586](https://eprint.iacr.org/2024/1586)
 
-## Notes
-
-- This is an **academic prototype** - not production ready
-- Poseidon integration is specific to BN254 field (Field256)
-- See **Benchmark Configuration** section above for complete hardware/software details
-
