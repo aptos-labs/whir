@@ -50,6 +50,7 @@ impl FromStr for AvailableFields {
 pub enum AvailableMerkle {
     Keccak256,
     Blake3,
+    Poseidon,
 }
 
 impl FromStr for AvailableMerkle {
@@ -59,6 +60,7 @@ impl FromStr for AvailableMerkle {
         match s {
             "Keccak" => Ok(Self::Keccak256),
             "Blake3" => Ok(Self::Blake3),
+            "Poseidon" => Ok(Self::Poseidon),
             _ => Err(format!("Invalid hash: {s}")),
         }
     }

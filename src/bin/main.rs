@@ -17,7 +17,8 @@ use whir::{
             self,
             blake3::{Blake3Compress, Blake3LeafHash, Blake3MerkleTreeParams},
             keccak::{KeccakCompress, KeccakLeafHash, KeccakMerkleTreeParams},
-            HashCounter,
+            poseidon::{PoseidonCompress, PoseidonLeafHash, PoseidonMerkleTreeParams},
+            HashCounter, QueryCounter,
         },
     },
     parameters::{
@@ -187,6 +188,19 @@ fn main() {
                 default_config::<F, KeccakLeafHash<F>, KeccakCompress>(&mut rng);
             run_whir::<F, KeccakMerkleTreeParams<F>>(&args, leaf_hash_params, two_to_one_params);
         }
+
+        (AvailableFields::Field256, AvailableMerkle::Poseidon) => {
+            use fields::Field256 as F;
+
+            let (leaf_hash_params, two_to_one_params) =
+                default_config::<F, PoseidonLeafHash<F>, PoseidonCompress<F>>(&mut rng);
+            run_whir::<F, PoseidonMerkleTreeParams<F>>(&args, leaf_hash_params, two_to_one_params);
+        }
+
+        (_, AvailableMerkle::Poseidon) => {
+            eprintln!("Error: Poseidon hash is only supported with Field256 (BN254)");
+            std::process::exit(1);
+        }
     }
 }
 
@@ -311,6 +325,7 @@ fn run_whir_as_ldt<F, MerkleConfig>(
     let verifier = Verifier::new(&params);
 
     HashCounter::reset();
+    QueryCounter::reset();
     let whir_verifier_time = Instant::now();
     for _ in 0..reps {
         let mut verifier_state = domainsep.to_verifier_state(&narg_string);
@@ -323,6 +338,7 @@ fn run_whir_as_ldt<F, MerkleConfig>(
     }
     dbg!(whir_verifier_time.elapsed() / reps as u32);
     dbg!(HashCounter::get() as f64 / reps as f64);
+    dbg!(QueryCounter::get() as f64 / reps as f64);
 }
 
 #[allow(clippy::too_many_lines)]
@@ -449,6 +465,7 @@ fn run_whir_pcs<F, MerkleConfig>(
     let verifier = Verifier::new(&params);
 
     HashCounter::reset();
+    QueryCounter::reset();
     let whir_verifier_time = Instant::now();
     for _ in 0..reps {
         let mut verifier_state = domainsep.to_verifier_state(prover_state.narg_string());
@@ -466,5 +483,9 @@ fn run_whir_pcs<F, MerkleConfig>(
     println!(
         "Average hashes: {:.1}k",
         (HashCounter::get() as f64 / reps as f64) / 1000.0
+    );
+    println!(
+        "Average queries: {:.1}",
+        QueryCounter::get() as f64 / reps as f64
     );
 }

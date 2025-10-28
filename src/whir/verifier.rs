@@ -86,6 +86,7 @@ where
 
         // Optional initial sumcheck round
         if self.params.initial_statement {
+            eprintln!("\n########## WHIR ROUND: INITIAL ##########");
             // Combine OODS and statement constraints to claimed_sum
             let constraints: Vec<_> = prev_commitment
                 .oods_constraints()
@@ -119,6 +120,7 @@ where
         }
 
         for round_index in 0..self.params.n_rounds() {
+            eprintln!("\n########## WHIR ROUND: {} ##########", round_index);
             // Fetch round parameters from config
             let round_params = &self.params.round_parameters[round_index];
 
@@ -161,6 +163,7 @@ where
         }
 
         // In the final round we receive the full polynomial instead of a commitment.
+        eprintln!("\n########## WHIR ROUND: FINAL ##########");
         let mut final_coefficients = vec![F::ZERO; 1 << self.params.final_sumcheck_rounds];
         verifier_state.fill_next_scalars(&mut final_coefficients)?;
         let final_coefficients = CoefficientList::new(final_coefficients);
@@ -244,27 +247,47 @@ where
         proof_of_work: f64,
     ) -> ProofResult<MultilinearPoint<F>> {
         let mut randomness = Vec::with_capacity(rounds);
-        for _ in 0..rounds {
+        
+        eprintln!("\n========== SUMCHECK VERIFICATION ({} rounds) ==========", rounds);
+        eprintln!("Initial claimed_sum: {:?}", claimed_sum);
+        
+        for round_idx in 0..rounds {
+            eprintln!("\n--- Sumcheck Round {} ---", round_idx);
+            
             // Receive this round's sumcheck polynomial
             let sumcheck_poly_evals: [_; 3] = verifier_state.next_scalars()?;
+            eprintln!("Received polynomial evaluations: h(0)={:?}, h(1)={:?}, h(2)={:?}", 
+                     sumcheck_poly_evals[0], sumcheck_poly_evals[1], sumcheck_poly_evals[2]);
+            
             let sumcheck_poly = SumcheckPolynomial::new(sumcheck_poly_evals.to_vec(), 1);
 
             // Verify claimed sum is consistent with polynomial
-            if sumcheck_poly.sum_over_boolean_hypercube() != *claimed_sum {
+            let computed_sum = sumcheck_poly.sum_over_boolean_hypercube();
+            eprintln!("Verifier computes: h(0) + h(1) = {:?}", computed_sum);
+            eprintln!("Expected claimed_sum: {:?}", claimed_sum);
+            eprintln!("Check passes: {}", computed_sum == *claimed_sum);
+            
+            if computed_sum != *claimed_sum {
+                eprintln!("ERROR: Sumcheck verification failed!");
                 return Err(ProofError::InvalidProof);
             }
 
-            // Proof of work per round
+            // Proof of work per round (skipping detailed log)
             self.verify_proof_of_work(verifier_state, proof_of_work)?;
 
             // Receive folding randomness
             let [folding_randomness_single] = verifier_state.challenge_scalars()?;
+            eprintln!("Folding randomness α: {:?}", folding_randomness_single);
             randomness.push(folding_randomness_single);
 
             // Update claimed sum using folding randomness
-            *claimed_sum = sumcheck_poly.evaluate_at_point(&folding_randomness_single.into());
+            let new_claimed_sum = sumcheck_poly.evaluate_at_point(&folding_randomness_single.into());
+            eprintln!("Verifier computes: h(α) = {:?}", new_claimed_sum);
+            *claimed_sum = new_claimed_sum;
+            eprintln!("Updated claimed_sum for next round: {:?}", claimed_sum);
         }
 
+        eprintln!("\n========== SUMCHECK VERIFICATION COMPLETE ==========\n");
         randomness.reverse();
         Ok(MultilinearPoint(randomness))
     }
@@ -366,6 +389,9 @@ where
         root: &MerkleConfig::InnerDigest,
         indices: &[usize],
     ) -> ProofResult<Vec<Vec<F>>> {
+        // Track number of queries
+        crate::crypto::merkle_tree::QueryCounter::add(indices.len());
+        
         // Receive claimed leafs
         let answers: Vec<Vec<F>> = verifier_state.hint()?;
 

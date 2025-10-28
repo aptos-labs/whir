@@ -6,6 +6,7 @@ pub mod blake3;
 pub mod digest;
 pub mod keccak;
 pub mod parameters;
+pub mod poseidon;
 pub mod proof;
 
 #[derive(Debug, Default)]
@@ -24,6 +25,25 @@ impl HashCounter {
 
     pub fn get() -> usize {
         HASH_COUNTER.load(Ordering::SeqCst)
+    }
+}
+
+#[derive(Debug, Default)]
+pub struct QueryCounter;
+
+static QUERY_COUNTER: AtomicUsize = AtomicUsize::new(0);
+
+impl QueryCounter {
+    pub fn add(count: usize) -> usize {
+        QUERY_COUNTER.fetch_add(count, Ordering::SeqCst)
+    }
+
+    pub fn reset() {
+        QUERY_COUNTER.store(0, Ordering::SeqCst);
+    }
+
+    pub fn get() -> usize {
+        QUERY_COUNTER.load(Ordering::SeqCst)
     }
 }
 

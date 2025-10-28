@@ -1,0 +1,162 @@
+===========================================
+LAGRANGE INTERPOLATION FORMULA FOR SUMCHECK
+===========================================
+
+This document explains how the WHIR verifier computes h(α) from the three evaluations h(0), h(1), h(2).
+
+## High-Level Overview
+
+The sumcheck polynomial is represented in **evaluation form** over the ternary domain {0, 1, 2}.
+For a single-variable sumcheck round, the prover sends 3 evaluations:
+  - h(0), h(1), h(2)
+
+The verifier then:
+  1. Checks: h(0) + h(1) == claimed_sum
+  2. Computes: h(α) for random challenge α
+  3. Updates: claimed_sum ← h(α) for the next round
+
+## The Formula
+
+### Method: Lagrange Interpolation over {0, 1, 2}
+
+Given:
+  - Evaluations: h(0), h(1), h(2)
+  - Challenge point: α ∈ F
+
+Compute:
+  h(α) = Σ_{i∈{0,1,2}} h(i) · L_i(α)
+
+Where L_i(α) are the Lagrange basis polynomials:
+
+  L_0(α) = (α - 1)(α - 2) / 2
+  L_1(α) = α(α - 2)(-1)       = -α(α - 2)
+  L_2(α) = α(α - 1) / 2
+
+Therefore:
+  h(α) = h(0)·(α - 1)(α - 2)/2 - h(1)·α(α - 2) + h(2)·α(α - 1)/2
+
+### Verification Formula
+
+Expanding:
+  h(α) = h(0) · [(α² - 3α + 2) / 2]
+       + h(1) · [-α² + 2α]
+       + h(2) · [(α² - α) / 2]
+
+Combining terms:
+  h(α) = [h(0)/2 - h(1) + h(2)/2] · α²
+       + [-3h(0)/2 + 2h(1) - h(2)/2] · α
+       + h(0)
+
+## Code Implementation (Rust)
+
+From `whir/src/sumcheck/sumcheck_polynomial.rs`:
+
+```rust
+pub fn evaluate_at_point(&self, point: &MultilinearPoint<F>) -> F {
+    assert_eq!(point.num_variables(), self.num_variables);
+    self.evaluations
+        .iter()
+        .enumerate()
+        .map(|(i, &eval)| eval * point.eq_poly3(i))
+        .sum()
+}
+```
+
+For 1 variable (single sumcheck round):
+  - evaluations = [h(0), h(1), h(2)]
+  - point.eq_poly3(i) computes L_i(α)
+
+From `whir/src/poly_utils/multilinear.rs`:
+
+```rust
+pub fn eq_poly3(&self, mut point: usize) -> F {
+    let two = F::ONE + F::ONE;
+    let two_inv = two.inverse().unwrap();  // 1/2
+    
+    let mut acc = F::ONE;
+    
+    // For single variable, this iterates once
+    for &val in self.0.iter().rev() {
+        acc *= match point % 3 {
+            0 => val_minus_one * val_minus_two * two_inv,  // (α-1)(α-2)/2
+            1 => val * val_minus_two * (-F::ONE),          // -α(α-2)
+            2 => val * val_minus_one * two_inv,            // α(α-1)/2
+            _ => unreachable!(),
+        };
+        point /= 3;
+    }
+    
+    acc
+}
+```
+
+Where:
+  - val = α
+  - val_minus_one = α - 1
+  - val_minus_two = α - 2
+
+## Circom Implementation Notes
+
+To implement this in Circom:
+
+```circom
+// Inputs: h0, h1, h2 (each has c0, c1 for Goldilocks2)
+//         alpha (also c0, c1)
+// Output: h_alpha (c0, c1)
+
+// Compute α - 1
+signal alpha_minus_1_c0 <== alpha_c0 - 1;
+signal alpha_minus_1_c1 <== alpha_c1;
+
+// Compute α - 2
+signal alpha_minus_2_c0 <== alpha_c0 - 2;
+signal alpha_minus_2_c1 <== alpha_c1;
+
+// Compute Lagrange basis L_0(α) = (α-1)(α-2)/2
+signal L0_temp <== (alpha_minus_1) * (alpha_minus_2);  // Product in extension field
+signal L0 <== L0_temp / 2;
+
+// Compute Lagrange basis L_1(α) = -α(α-2)
+signal L1_temp <== alpha * alpha_minus_2;              // Product in extension field
+signal L1 <== -L1_temp;
+
+// Compute Lagrange basis L_2(α) = α(α-1)/2
+signal L2_temp <== alpha * alpha_minus_1;              // Product in extension field
+signal L2 <== L2_temp / 2;
+
+// Final evaluation: h(α) = h(0)·L_0(α) + h(1)·L_1(α) + h(2)·L_2(α)
+signal h_alpha <== h0 * L0 + h1 * L1 + h2 * L2;       // All in extension field
+```
+
+**Important**: All operations must be performed in the Goldilocks quadratic extension field!
+
+## Extension Field Arithmetic
+
+For Goldilocks2, elements are represented as:
+  x = c0 + c1 · ω
+
+Where ω² = 7 (the extension field generator).
+
+Addition:
+  (a0 + a1·ω) + (b0 + b1·ω) = (a0 + b0) + (a1 + b1)·ω
+
+Multiplication:
+  (a0 + a1·ω) · (b0 + b1·ω) = (a0·b0 + 7·a1·b1) + (a0·b1 + a1·b0)·ω
+
+Where all operations are mod p (p = 2^64 - 2^32 + 1).
+
+## Example from Log (2^18 instance, Initial Round, Sumcheck Round 0)
+
+Input:
+  h(0) = QuadExtField { c0: 12215205352063168883, c1: 15999710841798399566 }
+  h(1) = QuadExtField { c0: 16944529998913458487, c1: 10458873399224807532 }
+  h(2) = QuadExtField { c0: 16616127435142680230, c1: 10233929630653772961 }
+  α    = QuadExtField { c0: 4447428230166501187, c1: 8540227344758325703 }
+
+Output:
+  h(α) = QuadExtField { c0: 8990233997910171714, c1: 7407899681650761744 }
+
+This can be used as a test vector for Circom implementation!
+
+===========================================
+

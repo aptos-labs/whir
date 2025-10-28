@@ -38,6 +38,7 @@ ark-ff = { version = "0.5", features = ["asm", "std"] }
 ark-serialize = "0.5"
 ark-crypto-primitives = { version = "0.5", features = ["merkle_tree"] }
 ark-poly = "0.5"
+ark-bn254 = "0.5"
 blake3 = "1.5.0"
 sha3 = "0.10"
 rand = "0.8"
@@ -53,6 +54,7 @@ thiserror = "2.0"
 itertools = "0.14"
 tracing = { version = "0.1.41", optional = true }
 hex = "0.4.3"
+aptos-crypto = { git = "https://github.com/aptos-labs/aptos-core", branch = "main", package = "aptos-crypto" }
 
 [dev-dependencies]
 proptest = "1.0"

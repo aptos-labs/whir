@@ -21,6 +21,7 @@ use whir::{
         merkle_tree::{
             blake3::{Blake3Compress, Blake3LeafHash, Blake3MerkleTreeParams},
             keccak::{KeccakCompress, KeccakLeafHash, KeccakMerkleTreeParams},
+            poseidon::{PoseidonCompress, PoseidonLeafHash, PoseidonMerkleTreeParams},
             parameters::default_config,
             HashCounter,
         },
@@ -212,6 +213,19 @@ fn main() {
             let (leaf_hash_params, two_to_one_params) =
                 default_config::<F, KeccakLeafHash<F>, KeccakCompress>(&mut rng);
             run_whir::<F, KeccakMerkleTreeParams<F>>(&args, leaf_hash_params, two_to_one_params);
+        }
+
+        (AvailableFields::Field256, AvailableMerkle::Poseidon) => {
+            use fields::Field256 as F;
+
+            let (leaf_hash_params, two_to_one_params) =
+                default_config::<F, PoseidonLeafHash<F>, PoseidonCompress<F>>(&mut rng);
+            run_whir::<F, PoseidonMerkleTreeParams<F>>(&args, leaf_hash_params, two_to_one_params);
+        }
+
+        (_, AvailableMerkle::Poseidon) => {
+            eprintln!("Error: Poseidon hash is only supported with Field256 (BN254)");
+            std::process::exit(1);
         }
     }
 }
