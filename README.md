@@ -39,9 +39,41 @@ Options:
 - `-p` sets the number of PoW bits (used for the query-phase). PoW bits for proximity gaps are set automatically.
 - `-d` sets the number of variables of the scheme.
 - `-e` sets the number of evaluations to prove. Only meaningful in PCS mode.
-- `-r` sets the log_inv of the rate
+- `-r` sets the log_inv of the rate (e.g., `-r 3` means ρ=1/8)
 - `-k` sets the number of variables to fold at each iteration. 
 - `--sec` sets the settings used to compute security. Available `UniqueDecoding`, `ProvableList`, `ConjectureList`
 - `--fold_type` sets the settings used to compute folds. Available `Naive`, `ProverHelps`
 - `-f` sets the field used, available are `Goldilocks2, Goldilocks3, Field192, Field256`.
-- `--hash` sets the hash used for the Merkle tree, available are `SHA3` and `Blake3`
+- `--hash` sets the hash used for the Merkle tree, available are `Blake3`, `Keccak`, `Poseidon` (Poseidon requires Field256/BN254)
+
+## Aptos Poseidon Integration
+
+This fork integrates **Aptos Poseidon** (`aptos-crypto::poseidon_bn254`) as a hash function option for WHIR:
+
+- **Field Requirement**: Poseidon only works with `Field256` (BN254)
+- **Compatibility**: Uses the same Poseidon implementation as Aptos keyless circuits (circomlib-compatible)
+- **No Input Width Limits**: Supports arbitrary input sizes via automatic batching
+- **Performance**: ~15-20× slower than Blake3, but ZK-friendly for recursion
+
+### Example: Run WHIR with Poseidon
+```bash
+cargo run --release -- -t PCS -d 18 -r 3 -f Field256 --hash Poseidon --sec ConjectureList
+```
+
+## Benchmarking
+
+### Native Hash Performance
+Compare Blake3, Keccak256, and Poseidon performance:
+```bash
+cargo bench --bench hash_comparison
+```
+
+### WHIR Prover Benchmarks
+Benchmark WHIR across different instance sizes and hash functions:
+```bash
+cargo run --release --bin benchmark -- -t PCS -d 18 -r 3 -f Field256 --hash Blake3 --sec ConjectureList
+cargo run --release --bin benchmark -- -t PCS -d 18 -r 3 -f Field256 --hash Keccak --sec ConjectureList
+cargo run --release --bin benchmark -- -t PCS -d 18 -r 3 -f Field256 --hash Poseidon --sec ConjectureList
+```
+
+See `../Linear_Update.md` for comprehensive benchmark results comparing all three hash functions across instances 2^18 to 2^22.
