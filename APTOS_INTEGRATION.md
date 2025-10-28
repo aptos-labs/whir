@@ -48,6 +48,23 @@ This script benchmarks:
 
 ## Benchmark Results Summary
 
+### Benchmark Configuration
+
+**Machine:**
+- Apple MacBook Pro M2 Max
+- macOS 25.0.0 (Darwin)
+- Chip: Apple M2 Max (12 CPU cores: 8 performance + 4 efficiency)
+
+**Threading:**
+- **Single-threaded execution** (`RAYON_NUM_THREADS=1`)
+- Forces deterministic, reproducible results
+- All cores available but only 1 thread used per benchmark
+
+**Software:**
+- Rust compiler: 1.83.0
+- Build mode: `--release` (optimized)
+- WHIR configuration: ConjectureList soundness
+
 ### Complete Results (BN254, ρ=1/8, 128-bit security, 1 thread)
 
 | Instance | Hash Function | Prover Time | Proof Size | Verifier Time | Verifier Hashes |
@@ -99,6 +116,5 @@ aptos-crypto = { git = "https://github.com/aptos-labs/aptos-core", branch = "mai
 
 - This is an **academic prototype** - not production ready
 - Poseidon integration is specific to BN254 field (Field256)
-- All benchmarks performed on Apple M2 Max
-- Security level: 100 bits (ConjectureList mode)
+- See **Benchmark Configuration** section above for complete hardware/software details
 
