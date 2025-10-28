@@ -13,7 +13,6 @@ This fork of WHIR integrates **Aptos Poseidon** (`aptos-crypto::poseidon_bn254`)
 - **Field Requirement**: Poseidon requires `Field256` (BN254)
 - **No Input Width Limits**: Supports arbitrary input sizes via automatic batching
 - **Circomlib Compatible**: Uses same Poseidon as Aptos keyless circuits
-- **Performance**: ~15-20× slower than Blake3, but enables efficient ZK recursion
 
 ## Quick Test
 
